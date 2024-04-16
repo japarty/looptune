@@ -1,10 +1,8 @@
 # EQILLM
 Project focusing on LLM finetuning analysis for emotion recognition. This project focuses on finetuning models in order to achieve quality of responses regarding pathos recognition observe in gpt-4. Additionally, I want to trial-and-error overall pipeline for interacting and improving LLM's.
 
-## Backend
-Due to simplicity for now LM Studio is used for running server simulating OpenAI-aike API. For local use it's enough, and provides simplicity of running multiple models quantificatified with different methods
-
-
+## Notes
+For now, notebooks are prepared in such way to ease my jumping between local development and using Google Colab. For similar experience, you may keep repository copy synced on Google Drive
 
 
 ## Issues
