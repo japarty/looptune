@@ -16,9 +16,6 @@ from yeelight import Bulb
 
 # Prepare functions
 
-def add_root(path, root_path):
-    return os.path.join(root_path, path)
-
 def to_binary_classification(x, convert_dict={"Positive": 'Pathos', 'Negative': 'Pathos'}):
     """
     Converts labels to binary classification ('Pathos' or 'No_pathos').
@@ -144,21 +141,20 @@ def save_logs_from_training_run(trainer, params, timestamp, trained_model_path, 
         colab (bool): Indicates whether the code was run in Google Colab.
         target_map (dict): A mapping of original labels to numerical indices.
     """
-    yeelight_eow_notification('192.168.1.216')
     log_history = parse_log_history(trainer.state.log_history)
     log_df = pd.DataFrame(log_history[1])
     log_df.insert(0, 'model', params['model'])
     log_df.insert(0, 'timestamp', timestamp)
+    log_df['binary'] = params['binary']
+    log_df['balanced'] = params['balanced']
+    log_df['split'] = str(params['split'])
+    log_df['target_map'] = str(target_map)
+    log_df['colab'] = colab
     log_df['model_path'] = trained_model_path
     log_df['samples_per_s'] = log_history[0]['train_samples_per_second']
     log_df['steps_per_s'] = log_history[0]['train_steps_per_second']
-    log_df['colab'] = colab
     log_df['per_device_train_batch_size'] = params['per_device_train_batch_size']
     log_df['per_device_eval_batch_size'] = params['per_device_eval_batch_size']
-    log_df['split'] = str(params['split'])
-    log_df['target_map'] = str(target_map)
-    log_df['binary'] = params['binary']
-    log_df['balanced'] = params['balanced']
 
     float_cols = log_df.select_dtypes(include='float64')
     log_df[float_cols.columns] = float_cols.apply(lambda x: round(x, 3))
@@ -177,7 +173,7 @@ def finetune(ds, params, target_map, reversed_target_map, save_logs, root_path, 
         target_map (dict): A mapping of original labels to numerical indices.
         save_logs (bool): If True, saves training logs and metrics.
         reversed_target_map:
-        :param root_path:
+        root_path:
     """
     params_passed = {k: params[k] for k in params if k in ['num_train_epochs',
                                                            'save_strategy',
@@ -193,12 +189,12 @@ def finetune(ds, params, target_map, reversed_target_map, save_logs, root_path, 
         # Tokenize dataset
         tokenizer = AutoTokenizer.from_pretrained(params['model'], trust_remote_code=True)
         # tokenizer.pad_token = tokenizer.eos_token
-        if tokenizer.pad_token is None:
-            # tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            tokenizer.add_special_tokens({'pad_token': '<pad>'})
+        # if tokenizer.pad_token is None:
+        #     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            # tokenizer.add_special_tokens({'pad_token': '<pad>'})
             # model.resize_token_embeddings(len(tokenizer))
         tokenized_datasets = ds.map(tokenize_fn, batched=True)
-        # data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+        data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
         # Change labels
         config = AutoConfig.from_pretrained(params['model'], trust_remote_code=True)
@@ -210,9 +206,9 @@ def finetune(ds, params, target_map, reversed_target_map, save_logs, root_path, 
         model = AutoModelForSequenceClassification.from_pretrained(
             params['model'], config=config, ignore_mismatched_sizes=True, trust_remote_code=True)
 
-        if tokenizer.pad_token is None:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            model.resize_token_embeddings(len(tokenizer))
+        # if tokenizer.pad_token is None:
+        #     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        #     model.resize_token_embeddings(len(tokenizer))
 
         training_args = TrainingArguments(
             output_dir=os.path.join(root_path, f'{trained_model_path}/checkpoints'),
@@ -229,7 +225,7 @@ def finetune(ds, params, target_map, reversed_target_map, save_logs, root_path, 
             eval_dataset=tokenized_datasets["test"],
             tokenizer=tokenizer,
             compute_metrics=compute_metrics,
-            # data_collator=data_collator,
+            data_collator=data_collator,
         )
         trainer.train()
         if save_logs:
@@ -316,7 +312,6 @@ def plot_cm(cm, target_map):
 
 
 def yeelight_eow_notification(bulb_ip):
-    print('here')
     bulb = Bulb(bulb_ip)
     bulb.turn_on()
     bulb.set_rgb(0, 255, 0)
