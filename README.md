@@ -12,8 +12,7 @@ Project focusing on LLM finetuning analysis for emotion recognition. This projec
 
 ## Notes
 - Training Loss = "No Log" the default logging_steps in TrainingArguments is set to 500 steps, so no loss is reported before 500 steps
-
+  https://discuss.huggingface.co/t/sending-a-dataset-or-datasetdict-to-a-gpu/17208
 ## Issues
-
-- unresolved:
-  - RuntimeError: CUDA error: device-side assert triggered: occurs after adding `tokenizer.add_special_tokens({'pad_token': '[PAD]'})` as was proposed in response under models which require pad token (`tokenizer.pad_token = tokenizer.eos_token` seems to not work for some of them)
+- RuntimeError: CUDA error: device-side assert triggered: occurs after adding `tokenizer.add_special_tokens({'pad_token': '[PAD]'})` as was proposed in response under models which require pad token (`tokenizer.pad_token = tokenizer.eos_token` seems to not work for some of them)
+- not all models support 'device_map='auto'
