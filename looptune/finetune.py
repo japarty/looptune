@@ -44,25 +44,31 @@ class WeightedCELossTrainer(Trainer):
 
 # Run
 
-def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, log_memory=False):
+def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, report_to="none", log_memory=True):
     """
     Fine-tunes a pre-trained language model for text classification. Handles tokenization, model loading, and training.
 
     """
+    if report_to != "none":
+        if 'wandb' in report_to:
+            arg_report_to = 'wandb'
+    else:
+        arg_report_to = "none"
+
+
     cuda_flag = torch.cuda.is_available()
-    if log_memory:
-        if 'wanb' in log_memory and cuda_flag == False:
-            print("Log memory set to True, but CUDA is unavailable. Setting to False")
-            log_memory = False
+    if log_memory and not cuda_flag:
+        print("Log memory set to True, but CUDA is unavailable. Setting to False")
+        log_memory = False
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     trained_model_path = f"output/models/{model.config._name_or_path}_{timestamp}"
 
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="pt")
-
     training_args = TrainingArguments(
         output_dir=f'{trained_model_path}/checkpoints',
         run_name=model.config._name_or_path,
+        report_to=arg_report_to,
         **params
     )
 
@@ -81,18 +87,20 @@ def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, log_m
 
     trainer.add_weights(weights)
 
+    report_to = [report_to] if not isinstance(report_to, list) else report_to
+
     if log_memory:
         cuda_prestats = get_cuda_memory(0)
         start_gpu_memory = cuda_prestats['reserved']
         max_memory = cuda_prestats['total_memory']
         print(f"GPU = {cuda_prestats['name']}. Max memory = {max_memory} GB.")
         print(f"{start_gpu_memory} GB of memory reserved.")
-        wandb.log({'pre_gpu': {'model': cuda_prestats['name'],
-                               'max_memory': max_memory,
-                               'memory_reserved': start_gpu_memory}})
-
+        if 'wandb' in report_to:
+            print('am in wand')
+            wandb.log({'pre_gpu': {'model': cuda_prestats['name'],
+                                   'max_memory': max_memory,
+                                   'memory_reserved': start_gpu_memory}})
     trainer_stats = trainer.train()
-
     if log_memory:
         cuda_poststats = get_cuda_memory(0)
         used_memory = cuda_poststats['reserved']
@@ -105,16 +113,16 @@ def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, log_m
         print(f"Peak reserved memory for training = {used_memory_for_training} GB.")
         print(f"Peak reserved memory % of max memory = {used_percentage} %.")
         print(f"Peak reserved memory for training % of max memory = {lora_percentage} %.")
-        wandb.log({'post_gpu': {'peak_memory': used_memory, 'training_memory': used_memory_for_training}})
+        if 'wandb' in report_to:
+            wandb.log({'post_gpu': {'peak_memory': used_memory, 'training_memory': used_memory_for_training}})
 
     predicted = trainer.predict(tokenized_datasets['test'])
     predicted_labels = [int(i.argmax()) for i in predicted[0]]
     true_labels = ds['test']['label']
-    wandb.log({"cm_test": wandb.plot.confusion_matrix(probs=None,
-                                                      y_true=true_labels,
-                                                      preds=predicted_labels, class_names=list(target_map.keys()))
-               })
-
-    # clean_memory()
+    if 'wandb' in report_to:
+        wandb.log({"cm_test": wandb.plot.confusion_matrix(probs=None,
+                                                          y_true=true_labels,
+                                                          preds=predicted_labels, class_names=list(target_map.keys()))
+                   })
 
     return trainer, predicted

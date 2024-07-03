@@ -10,7 +10,9 @@ from .preprocessing import *
 from .validate import *
 from .logging import *
 
-def single_run(run_params, df, to_return=None, clean_at_end=True):
+import warnings
+
+def single_run(run_params, df, to_return=None):
     wandb_log = False
     try:
         ds, target_map = df_to_ds(df)
@@ -27,15 +29,16 @@ def single_run(run_params, df, to_return=None, clean_at_end=True):
                         else:
                             ds = balance_dataset(ds, *i)
 
-
+        warnings.filterwarnings('ignore')
         if 'report_to' in run_params:
                 report_to = run_params['report_to']
                 if isinstance(report_to, str):
                     report_to = [report_to]
         else:
-            report_to = False
+            report_to = "none"
 
         if wandb_log:
+            print('wandb inited')
             wandb.init(name=run_params['model_name'], **run_params['wandb_init_params'])
 
         bnb_config = run_params['bnb_config'] if 'bnb_config' in run_params else False
@@ -45,7 +48,8 @@ def single_run(run_params, df, to_return=None, clean_at_end=True):
                                                           ds,
                                                           target_map,
                                                           bnb_config,
-                                                          peft_config)
+                                                          peft_config,
+                                                          )
         trainer, predicted = finetune(model,
                            tokenizer,
                            tokenized_datasets,
@@ -53,7 +57,7 @@ def single_run(run_params, df, to_return=None, clean_at_end=True):
                            run_params['training_arguments'],
                            target_map,
                            report_to)
-
+        warnings.filterwarnings('default')
         if to_return:
             return eval(f"{', '. join(to_return)}")
 

@@ -54,7 +54,6 @@ def init_model(model_checkpoint, ds, target_map, bnb_config=False, peft_config=F
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
-        print('pefted')
 
     if cuda_flag:
         model = model.cuda()
