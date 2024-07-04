@@ -1,6 +1,7 @@
 import pandas as pd
 import itertools
 import copy
+import random
 
 from datasets import concatenate_datasets
 from collections import defaultdict
@@ -75,6 +76,8 @@ def split_ds(dataset, train_size=0.8, val_size=None):
 
 
 def balance_dataset(dataset, col_from, col_to=False):
+    random.seed(42)
+
     samples_by_class = defaultdict(list)
     for sample in dataset[col_from]:
         samples_by_class[sample["label"]].append(sample)
@@ -86,6 +89,9 @@ def balance_dataset(dataset, col_from, col_to=False):
     for samples in samples_by_class.values():
         balanced_dataset.extend(samples[:min_count])
         leftovers.extend(samples[min_count:])
+
+    random.shuffle(balanced_dataset)
+    random.shuffle(leftovers)
 
     balanced_dataset = Dataset.from_list(balanced_dataset)
     balanced_dataset = balanced_dataset.cast_column('label', dataset[col_from].features['label'])
