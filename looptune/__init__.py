@@ -49,6 +49,7 @@ def single_run(run_params, df, to_return=None):
                                                           target_map,
                                                           bnb_config,
                                                           peft_config,
+                                                          custom_loader=run_params['custom_loader'] if 'custom_loader' in run_params else False,
                                                           )
         trainer, predicted = finetune(model,
                            tokenizer,
