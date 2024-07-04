@@ -16,3 +16,5 @@ For now it's limited to sequence classification (or at least it was the only one
 Ultimately, I want to provide it as a dockerized webapp.
 ## Issues
 - not all models support 'device_map='auto'/are peftable. is_peftable() checking would be a TODO
+
+- Using flash attentiom will need additional steps from the user. error: Microsoft Visual C++ 14.0 or greater is required. Get it with "Microsoft C++ Build Tools": https://visualstudio.microsoft.com/visual-cpp-build-tools/ while `pip install flash-attn`, see https://github.com/huggingface/transformers/issues/30547

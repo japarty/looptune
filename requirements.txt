@@ -16,3 +16,4 @@ transformers
 wandb
 yeelight
 openpyxl
+sentencepiece
