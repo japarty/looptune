@@ -8,7 +8,7 @@ This package is prepared as a wrapper for a trainer finetuning pipeline, to simn
 3. I you want to run with GPU (afaik only Nvidia is supported), install torch accordingly to: https://pytorch.org/
 
 ## Notebooks
-1. peft_example - simple finetuning of model for multilabel emotion classification with peft support
+1. finetune_example - simple finetuning of model for multilabel emotion classification, actively changed as it's also used to testing features to keep example up to date
 
 ## Notes
 For now it's limited to sequence classification (or at least it was the only one tested). 

@@ -6,7 +6,7 @@ import wandb
 
 from transformers import Trainer, TrainingArguments, DataCollatorWithPadding
 from looptune.logging import get_cuda_memory
-
+from transformers import EarlyStoppingCallback
 
 # Trainer and metrics
 def compute_metrics(eval_pred):
@@ -44,11 +44,18 @@ class WeightedCELossTrainer(Trainer):
 
 # Run
 
-def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, report_to="none", log_memory=True):
+def finetune(model, tokenizer, tokenized_datasets, ds, target_map, training_arguments={}, trainer_arguments={}, report_to="none", log_memory=True):
     """
     Fine-tunes a pre-trained language model for text classification. Handles tokenization, model loading, and training.
 
     """
+    if 'callbacks' in trainer_arguments:
+        if not isinstance(trainer_arguments['callbacks'], list):
+            if isinstance(trainer_arguments['callbacks'], tuple):
+                trainer_arguments['callbacks'] = list(trainer_arguments['callbacks'])
+            else:
+                trainer_arguments['callbacks'] = [trainer_arguments['callbacks']]
+
     if report_to != "none":
         if 'wandb' in report_to:
             arg_report_to = 'wandb'
@@ -69,7 +76,7 @@ def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, repor
         output_dir=f'{trained_model_path}/checkpoints',
         run_name=model.config._name_or_path,
         report_to=arg_report_to,
-        **params
+        **training_arguments
     )
 
     trainer = WeightedCELossTrainer(
@@ -80,6 +87,8 @@ def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, repor
         data_collator=data_collator,
         compute_metrics=compute_metrics,
         tokenizer=tokenizer,
+        **trainer_arguments,
+
     )
 
     weights = [len(ds['train'].to_pandas()) / (len(ds['train'].to_pandas().label.value_counts()) * i)
@@ -100,7 +109,9 @@ def finetune(model, tokenizer, tokenized_datasets, ds, params, target_map, repor
             wandb.log({'pre_gpu': {'model': cuda_prestats['name'],
                                    'max_memory': max_memory,
                                    'memory_reserved': start_gpu_memory}})
+
     trainer_stats = trainer.train()
+
     if log_memory:
         cuda_poststats = get_cuda_memory(0)
         used_memory = cuda_poststats['reserved']

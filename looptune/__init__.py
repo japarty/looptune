@@ -12,6 +12,7 @@ from .logging import *
 
 import warnings
 
+
 def single_run(run_params, df, to_return=None):
     wandb_log = False
     try:
@@ -31,9 +32,9 @@ def single_run(run_params, df, to_return=None):
 
         warnings.filterwarnings('ignore')
         if 'report_to' in run_params:
-                report_to = run_params['report_to']
-                if isinstance(report_to, str):
-                    report_to = [report_to]
+            report_to = run_params['report_to']
+            if isinstance(report_to, str):
+                report_to = [report_to]
         else:
             report_to = "none"
 
@@ -41,27 +42,32 @@ def single_run(run_params, df, to_return=None):
             print('wandb inited')
             wandb.init(name=run_params['model_name'], **run_params['wandb_init_params'])
 
-        bnb_config = run_params['bnb_config'] if 'bnb_config' in run_params else False
-        peft_config = run_params['peft_config'] if 'peft_config' in run_params else False
-
-        model, tokenizer, tokenized_datasets = init_model(run_params['model_name'],
-                                                          ds,
-                                                          target_map,
-                                                          bnb_config,
-                                                          peft_config,
-                                                          custom_loader=run_params['custom_loader'] if 'custom_loader' in run_params else False,
-                                                          )
+        model, tokenizer, tokenized_datasets = init_model(
+            run_params['model_name'],
+            ds,
+            target_map,
+            run_params['bnb_config'] if 'bnb_config' in run_params else False,
+            run_params['peft_config'] if 'peft_config' in run_params else False,
+            run_params['custom_loader'] if 'custom_loader' in run_params else False,
+        )
+        print(run_params['trainer'])
         trainer, predicted = finetune(model,
-                           tokenizer,
-                           tokenized_datasets,
-                           ds,
-                           run_params['training_arguments'],
-                           target_map,
-                           report_to)
-        warnings.filterwarnings('default')
-        if to_return:
-            return eval(f"{', '. join(to_return)}")
+            tokenizer,
+            tokenized_datasets,
+            ds,
+            target_map,
+            run_params['training_arguments'] if 'training_arguments' in run_params else {},
+            run_params['trainer'] if 'trainer' in run_params else {},
+            report_to,
+            run_params['log_memory'] if 'log_memory' in run_params else True,
+            )
 
+        warnings.filterwarnings('default')
+
+        if to_return:
+            return eval(f"{', '.join(to_return)}")
+
+        # this runs if 'to_return' was not passed
         del model
         del trainer
         del tokenizer
@@ -75,8 +81,3 @@ def single_run(run_params, df, to_return=None):
         if wandb_log:
             wandb.log({'error': str(exc)})
             wandb.finish(1)
-
-
-
-
-
