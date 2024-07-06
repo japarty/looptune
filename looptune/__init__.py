@@ -6,7 +6,7 @@ from .finetune import *
 from .model import *
 from .optional_utils import *
 from .preprocessing import *
-# from .prompting import *
+from .prompting import *
 from .validate import *
 from .logging import *
 
@@ -50,7 +50,7 @@ def single_run(run_params, df, to_return=None):
             run_params['peft_config'] if 'peft_config' in run_params else False,
             run_params['custom_loader'] if 'custom_loader' in run_params else False,
         )
-        print(run_params['trainer'])
+
         trainer, predicted = finetune(model,
             tokenizer,
             tokenized_datasets,
