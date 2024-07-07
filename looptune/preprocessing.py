@@ -75,11 +75,17 @@ def split_ds(dataset, train_size=0.8, val_size=None):
     return dataset
 
 
-def balance_dataset(dataset, col_from, col_to=False):
+def balance_dataset(dataset, col_from=False, col_to=False):
     random.seed(42)
 
+    if isinstance(dataset, DatasetDict):
+        ds_from = dataset[col_from]
+    else:
+        ds_from = dataset
+
     samples_by_class = defaultdict(list)
-    for sample in dataset[col_from]:
+
+    for sample in ds_from:
         samples_by_class[sample["label"]].append(sample)
 
     min_count = min(len(samples) for samples in samples_by_class.values())
@@ -94,8 +100,13 @@ def balance_dataset(dataset, col_from, col_to=False):
     random.shuffle(leftovers)
 
     balanced_dataset = Dataset.from_list(balanced_dataset)
-    balanced_dataset = balanced_dataset.cast_column('label', dataset[col_from].features['label'])
-    dataset[col_from] = balanced_dataset
+    balanced_dataset = balanced_dataset.cast_column('label', ds_from.features['label'])
+    ds_from = balanced_dataset
+
+    if isinstance(dataset, DatasetDict):
+        dataset[col_from] = ds_from
+    else:
+        dataset = ds_from
 
     if col_to != False:
         leftovers_ds = Dataset.from_list(leftovers)
