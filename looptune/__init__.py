@@ -14,7 +14,6 @@ import warnings
 
 
 def single_run(run_params, df, to_return=None):
-    wandb_log = False
     try:
         ds, target_map = df_to_ds(df)
         ds = split_ds(ds, train_size=run_params['split'][0])
@@ -38,7 +37,7 @@ def single_run(run_params, df, to_return=None):
         else:
             report_to = "none"
 
-        if wandb_log:
+        if 'wandb' in report_to:
             print('wandb inited')
             wandb.init(name=run_params['model_name'], **run_params['wandb_init_params'])
 
@@ -78,6 +77,6 @@ def single_run(run_params, df, to_return=None):
     except Exception as exc:
         print(exc)
 
-        if wandb_log:
+        if 'wandb' in report_to:
             wandb.log({'error': str(exc)})
             wandb.finish(1)
