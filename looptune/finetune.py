@@ -62,18 +62,20 @@ def finetune(model, tokenizer, tokenized_datasets, ds, target_map, training_argu
     else:
         arg_report_to = "none"
 
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+    trained_model_path = f"output/models/{model.config._name_or_path}_{timestamp}"
+
+    if 'output_dir' not in training_arguments:
+        training_arguments['output_dir'] = trained_model_path
+
 
     cuda_flag = torch.cuda.is_available()
     if log_memory and not cuda_flag:
         print("Log memory set to True, but CUDA is unavailable. Setting to False")
         log_memory = False
 
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-    trained_model_path = f"output/models/{model.config._name_or_path}_{timestamp}"
-
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="pt")
     training_args = TrainingArguments(
-        output_dir=f'{trained_model_path}/checkpoints',
         run_name=model.config._name_or_path,
         report_to=arg_report_to,
         **training_arguments

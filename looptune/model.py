@@ -30,6 +30,9 @@ def init_model(model_checkpoint, ds, target_map, bnb_config=False, peft_config=F
     # config.vocab_size = tokenizer.vocab_size
     config.id2label = {v: k for k, v in target_map.items()}
     config.label2id = target_map
+
+
+    print('hereee')
     if not bnb_config:
         model = loader.from_pretrained(model_checkpoint,
                                                                    # num_labels=2,
