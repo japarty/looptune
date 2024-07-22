@@ -4,7 +4,7 @@ from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
 from transformers import AutoModelForSequenceClassification, AutoConfig, AutoTokenizer, BitsAndBytesConfig
 
 
-def init_model(model_checkpoint, ds, target_map, bnb_config=False, peft_config=False, custom_loader=False):
+def init_model(model_checkpoint, ds, target_map, bnb_config=False, peft_config=False, custom_loader=False, use_cpu=False):
     loader = AutoModelForSequenceClassification if custom_loader == False else custom_loader
 
     cuda_flag = torch.cuda.is_available()
@@ -31,8 +31,6 @@ def init_model(model_checkpoint, ds, target_map, bnb_config=False, peft_config=F
     config.id2label = {v: k for k, v in target_map.items()}
     config.label2id = target_map
 
-
-    print('hereee')
     if not bnb_config:
         model = loader.from_pretrained(model_checkpoint,
                                                                    # num_labels=2,
@@ -60,7 +58,7 @@ def init_model(model_checkpoint, ds, target_map, bnb_config=False, peft_config=F
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 
-    if cuda_flag:
+    if cuda_flag and not use_cpu:
         model = model.cuda()
 
     # model.config.use_cache = False
